@@ -12,7 +12,8 @@
 void usage()	{
 	fprintf(stderr, "\nAufruf: ./udpclient [OPTION]... [WERT]...");
 	fprintf(stderr, "\n\t --mode \tGeben Sie ip-udp oder unix mode an! Option ist verpflichtend\n");
-	fprintf(stderr, "-p\t --port \tHier können sie den Port angeben!\n");
+	fprintf(stderr, "-p\t --port \tMit dieser Option können Sie den Port angeben\n");
+	fprintf(stderr, "\t --ip \t\tMit dieser Option können Sie die IP-Adresse angeben\n");
 }
 
 int main(int argc, char **argv)	{
@@ -20,15 +21,20 @@ int main(int argc, char **argv)	{
 	short port=9000;
 	char * end;
 	char mode_string[50]={"empty"};	
+	char ip_string[20]={"127.0.0.1"};
 	struct option longopt[]={
 		{"mode", required_argument, 0, 0},
+		{"ip", required_argument, 0, 1},
 		{"port", required_argument, 0, 'p'}
 	};
 	int o, option_index;
-	while((o=getopt_long(argc, argv, "0p:", longopt, &option_index))!=-1) {
+	while((o=getopt_long(argc, argv, "p:", longopt, &option_index))!=-1) {
 			switch (o) {
 				case 0:
 					strcpy(mode_string, optarg);
+					break;
+				case 1:
+					strcpy(ip_string, optarg);
 					break;
 				case 'p':
 					port=strtol(optarg, &end, 10);
@@ -67,9 +73,11 @@ int main(int argc, char **argv)	{
 		}
 		dst.sin_family=AF_INET;
 		dst.sin_port=htons(port);
-		int v=inet_pton(AF_INET, "127.0.0.1", &dst.sin_addr);
+		int v=inet_pton(AF_INET, ip_string, &dst.sin_addr);
 		if(v==0)	{
-			fprintf(stderr, "Keine IP Adresse \n");
+			fprintf(stderr, "Keine gültige IP Adresse \n");
+			usage();
+			exit(1);
 		}
 		else if(v==-1)	{
 			perror("inet_pton");

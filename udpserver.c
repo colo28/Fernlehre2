@@ -31,7 +31,7 @@ int main(int argc, char **argv)	{
 	int o=0;
 	int option_index;
 	
-	while((o=getopt_long(argc, argv, "0p:", longopt, &option_index))!=-1) {
+	while((o=getopt_long(argc, argv, "p:", longopt, &option_index))!=-1) {
 			switch (o) {
 				case 0:
 					strcpy(mode_string, optarg);
