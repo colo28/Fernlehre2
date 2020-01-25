@@ -10,13 +10,11 @@
 #include <sys/un.h>
 #include <signal.h>
 
-
-int s;
-
 void usage()	{
-	fprintf(stderr, "\nAufruf: ./udpserver [OPTION]... [WERT]...");
+	fprintf(stderr, "\nAufruf: ./udpclient [OPTION]... [WERT]...");
 	fprintf(stderr, "\n\t --mode \tGeben Sie ip-udp oder unix mode an! Option ist verpflichtend\n");
-	fprintf(stderr, "-p\t --port \tHier können sie den Port angeben!\n");
+	fprintf(stderr, "-p\t --port \tMit dieser Option können Sie den Port angeben\n");
+	fprintf(stderr, "\t --ip \t\tMit dieser Option können Sie die IP-Adresse angeben\n");
 }
 
 int main(int argc, char **argv)	{
@@ -24,21 +22,24 @@ int main(int argc, char **argv)	{
 	short port=9000;
 	char * end;
 	char mode_string[50]={"empty"};	
+	char ip_string[20]={"127.0.0.1"};
 	struct option longopt[]={
 		{"mode", required_argument, 0, 0},
+		{"ip", required_argument, 0, 1},
 		{"port", required_argument, 0, 'p'}
 	};
-	int o=0;
-	int option_index;
-	
+	int o, option_index;
 	while((o=getopt_long(argc, argv, "p:", longopt, &option_index))!=-1) {
 			switch (o) {
 				case 0:
 					strcpy(mode_string, optarg);
 					break;
+				case 1:
+					strcpy(ip_string, optarg);
+					break;
 				case 'p':
 					port=strtol(optarg, &end, 10);
-					fprintf(stdout,"%d\n", port);	
+					printf("%d", port);	
 					break;
 				case '?':
 					fprintf(stderr, "Es wurde eine unbekannte Option angegeben!\n");
@@ -61,7 +62,8 @@ int main(int argc, char **argv)	{
 			exit(1);
 		}
 	}	
-
+				
+	int s;
 	struct sockaddr_in server;
 	char puffer[256]="test";
 
@@ -69,7 +71,20 @@ int main(int argc, char **argv)	{
 	socklen_t receive_len;
 
 	server.sin_family=AF_INET;
-	int v=inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+	int v=inet_pton(AF_INET, ip_string, &server.sin_addr);
+		if(v==0)	{
+			fprintf(stderr, "Keine gültige IP Adresse \n");
+			usage();
+			exit(1);
+		}
+		else if(v==-1)	{
+			perror("inet_pton");
+			exit(1);
+		}
+		else if(v!=1)	{
+			fprintf(stderr, "Ungültiger Returncode");
+			exit(1);
+		}
 	server.sin_port=htons(port);
 	receive_len=sizeof(server);
 	s=socket(AF_INET, SOCK_DGRAM, 0);
@@ -100,7 +115,8 @@ int main(int argc, char **argv)	{
 		receive_len_unix=sizeof(server_unix);	
 		bind(s, (struct sockaddr *) &server_unix, sizeof(struct sockaddr_un));
 		while(1)	{
-			read(s, puffer, 256);		
+		//	read(s, puffer, 256);		
+			recvfrom(s, &puffer, sizeof(puffer), 0,(struct sockaddr*) &server_unix, &receive_len_unix);
 
 		printf("%s", puffer);
 	}
